@@ -28,13 +28,18 @@ const PostSchema = new mongoose.Schema(
 
     userLikes: {
       type: Array,
-      default:[]
+      default: [],
+    },
+
+    likesAmount: {
+      type: Number,
+      default: 0,
     },
 
     commentsAmount: {
       type: Number,
-      default: 0
-    }
+      default: 0,
+    },
   },
 
   {

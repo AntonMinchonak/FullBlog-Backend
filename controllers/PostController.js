@@ -2,8 +2,6 @@ import PostModel from "../models/Post.js"
 import user from "../models/user.js";
 import Comment from "../models/Comment.js";
 
-import e from "cors";
-
 export const create = async (req, res) => {
   
   try {
@@ -29,24 +27,37 @@ export const create = async (req, res) => {
 
 export const getAll = async (req, res) => {
     try {
-      const userFilter = req.query.id
+      const userFilter = req.query.id // when profile posts
       const sort = req.query.sort
-      const userId = req.query.userId
+      const userId = req.query.userId // follow users posts
       const search = req.query.search.toLowerCase();
+      const page = req.query.page ?? 0;
+
       let filterParams = {};
       if (userFilter) filterParams.user = userFilter;
       if (userId) {
-         const me = await user.findById(userId);
+        const me = await user.findById(userId);
         filterParams.user = { $in: [...me.follow,me._id] };
       }
+      if (search) {
+        filterParams.$or = [
+          { title: { $regex: search, $options: "i" } },
+          { text: { $regex: search, $options: "i" } },
+        ];
+      }
 
-      let posts = await PostModel.find(filterParams).populate("user").exec();
-      posts.sort((a, b) => {
-        if (sort === 'time') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        if (sort === 'views') return b.viewsCount - a.viewsCount
-        if (sort === 'likes') return b.userLikes.length - a.userLikes.length
-      })
-      posts = posts.filter(e => e.title.toLowerCase().includes(search) || e.text.toLowerCase().includes(search) || e.user.fullName.toLowerCase().includes(search));
+      let sortType = { createdAt: -1 };
+      if (sort === 'views') sortType = { viewsCount: -1 };
+      if (sort === "likes") sortType = { likesAmount: -1 };
+      console.log(page);
+     
+      let posts = await PostModel.find(filterParams).sort(sortType).limit(10).skip(page*10).populate("user").exec();
+      // posts.sort((a, b) => {
+      //   if (sort === 'time') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      //   if (sort === 'views') return b.viewsCount - a.viewsCount
+      //   if (sort === 'likes') return b.userLikes.length - a.userLikes.length
+      // })
+       console.log(posts.length);
       res.json(posts)
     } catch (error) {
         console.log(error);
@@ -168,7 +179,7 @@ export const likeOne = async (req, res) => {
     const filteredLikesList = likedPost.userLikes.filter(e => e._id.valueOf() !== whoLiked._id.valueOf());
     const addedList = [...likedPost.userLikes, whoLiked];
     const newList = req.query.like > 0 ? addedList : filteredLikesList;
-     PostModel.findOneAndUpdate({ _id: postId }, { userLikes: newList }, { returnDocument: "after" }, (err, doc) => {
+     PostModel.findOneAndUpdate({ _id: postId }, { userLikes: newList, likesAmount: newList.length }, { returnDocument: "after" }, (err, doc) => {
        if (err) {
          console.log(err);
          return res.status(500).json({
