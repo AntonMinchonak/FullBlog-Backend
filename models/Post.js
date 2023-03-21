@@ -26,8 +26,13 @@ const PostSchema = new mongoose.Schema(
     },
     imageUrl: String,
 
+    // userLikes: {
+    //   type: Array,
+    //   default: [],
+    // },
     userLikes: {
-      type: Array,
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
       default: [],
     },
 

@@ -96,7 +96,6 @@ export const remove = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const commentId = req.params.id;
-    console.log(req.body);
     await Comment.updateOne(
       { _id: commentId },
       {
