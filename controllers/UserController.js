@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "../models/user.js";
 
+import nodemailer from "nodemailer";
+import directTransport from "nodemailer-direct-transport";
 
 export const register = async (req, res) => {
   try {
@@ -31,13 +33,43 @@ export const register = async (req, res) => {
 
     const { passwordHash, ...userData } = user._doc;
 
-    res.json({ ...userData, token });
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({
-      message: err + " Не удалось создать пользователя",
-    });
-  }
+
+      
+    const fromHost = `gmail.com`;
+    const from = "MinchonokBlog" + "@" + fromHost; //придумываете свою почту(может быть несуществующая)
+    const to = "anton.minchonak@itspro.by";
+    const transport = nodemailer.createTransport(
+      directTransport({
+        name: fromHost,
+      })
+    );
+    transport.sendMail(
+      {
+        from,
+        to,
+        subject: "Подтверждение почты",
+        html: `
+             <h1>Вы успешно зарегестрировались</h1>
+             <a>А мне было лень делать подтверждение регистрации. Проходите мимо.</a>
+            `,
+      },
+      (err, data) => {
+        if (err) {
+          console.error("Ошибка при отправке:", err);
+        } else {
+          console.log("Письмо отправлено");
+        }
+      }
+    );
+    
+    
+        res.json({ ...userData, token });
+      } catch (err) {
+        console.log(err);
+        res.status(500).json({
+          message: err + " Не удалось создать пользователя",
+        });
+      }
 };
 
 export const login = async (req, res) => {

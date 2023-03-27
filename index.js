@@ -4,6 +4,8 @@ import router from "./router.js";
 import cors from "cors";
 import mongoose from "mongoose";
 
+
+
 const app = express()
 
 mongoose
@@ -21,3 +23,5 @@ app.listen(4444, (err) => {
         }
         console.log("OKKK");
 });
+
+

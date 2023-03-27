@@ -30,25 +30,30 @@ export const getAll = async (req, res) => {
       const userFilter = req.query.id // when profile posts
       const sort = req.query.sort
       const userId = req.query.userId // follow users posts
-      const search = req.query.search?.toLowerCase();
+      let search = req.query.search?.toLowerCase();
       const page = req.query.page ?? 0;
 
       let filterParams = {};
       if (userFilter) filterParams.user = userFilter;
       if (userId) {
         const me = await user.findById(userId);
-        filterParams.user = { $in: [...me.follow,me._id] };
+        filterParams.user = { $in: [...me.follow, me._id] };
       }
       if (search) {
-        filterParams.$or = [
-          { title: { $regex: search, $options: "i" } },
-          { text: { $regex: search, $options: "i" } },
-        ];
+        // filterParams.$or = [
+        //   { title: { $regex: search, $options: "i" } },
+        //   { text: { $regex: search, $options: "i" } },
+  
+        // ];
+
+        filterParams.$text = { $search: search }
+  
       }
 
       let sortType = { createdAt: -1 };
       if (sort === 'views') sortType = { viewsCount: -1 };
       if (sort === "likes") sortType = { likesAmount: -1 };
+
 
       let posts = await PostModel.find(filterParams).sort(sortType).limit(10).skip(page*10).populate("user").populate("userLikes").exec();
       // posts.sort((a, b) => {
@@ -70,25 +75,24 @@ export const getOne = async (req, res) => {
   
     try {
       const postId = req.params.id;
-      const post = await PostModel.findById(postId).populate("user").exec();
-      
-      PostModel.findOneAndUpdate({ _id: postId }, { $inc: { viewsCount: 1 } }, { returnDocument: "after" }, (err, doc) => {
-        if (err) {
-          console.log(err);
-          return res.status(500).json({
-            message: " Не удалось вернуть пост",
-          });
-        }
-        if (!doc) {
-          return res.status(404).json({
-            message: " поста нету(",
-          });
-        }
+      // await PostModel.findOneAndUpdate({ _id: postId }, { $inc: { viewsCount: 1 } }, { returnDocument: "after" }, (err, doc) => {
+      //   if (err) {
+      //     console.log(err);
+      //     return res.status(500).json({
+      //       message: " Не удалось вернуть пост",
+      //     });
+      //   }
+      //   if (!doc) {
+      //     return res.status(404).json({
+      //       message: " поста нету(",
+      //     });
+      //   }
 
-        doc.user = post.user;
-       
-        res.json(doc)
-      });
+      // });
+      await PostModel.updateOne({ _id: postId }, { $inc: { viewsCount: 1 } }); 
+      const post = await PostModel.findById(postId).populate("user").populate("userLikes").exec();
+      res.json(post);
+
     } catch (error) {
         console.log(error);
         res.status(500).json({
@@ -193,7 +197,6 @@ export const likeOne = async (req, res) => {
            message: " поста нету(",
          });
        }
-        console.log(doc);
        res.json(doc);
      });
 
